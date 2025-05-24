@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Gl1tch0v3rr1d3 - Interactive hacker-themed terminal interface" />
+  <title>Gl1tch0v3rr1d3 Terminal</title>
+  <style>
+    /* Import fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+    /* CSS Variables for easy theming */
+    :root {
+      --primary-color: #33FF33;
+      --primary-glow: #00ff00;
+      --secondary-color: #00FFFF;
+      --accent-color: #FF00FF;
+      --bg-color: #000;
+      --terminal-bg: rgba(0, 0, 0, 0.85);
+      --font-main: 'Share Tech Mono', monospace;
+      --font-pixel: 'VT323', monospace;
+    }
+
+    /* Accessibility: Focus styles */
+    *:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    /* Root styling */
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-color);
+      color: var(--primary-color);
+      font-family: var(--font-main);
+      overflow: hidden;
+    }
+
+    /* Container for terminal */
+    #terminal-container {
+      position: relative;
+      height: 100vh;
+      padding: 2rem;
+      box-sizing: border-box;
+      user-select: none;
+      z-index: 10;
+    }
+
+    /* Ghost Protocol Header */
+    #header-block {
+      white-space: pre;
+      font-size: 1.1rem;
+      line-height: 1.4;
+      margin-bottom: 1.5rem;
+      text-shadow:
+        0 0 5px var(--primary-color),
+        0 0 10px var(--primary-color),
+        0 0 20px var(--primary-color),
+        0 0 40px var(--primary-glow);
+      animation: glitchText 5s infinite;
+    }
+
+    /* Terminal output area */
+    #terminal {
+      white-space: pre-wrap;
+      font-size: 1rem;
+      line-height: 1.3;
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid var(--primary-color);
+      padding: 1rem;
+      background: var(--terminal-bg);
+      box-shadow:
+        inset 0 0 20px var(--primary-glow),
+        0 0 10px var(--primary-glow);
+      border-radius: 8px;
+      filter: drop-shadow(0 0 5px var(--primary-color));
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    #terminal:hover {
+      box-shadow:
+        inset 0 0 25px var(--primary-glow),
+        0 0 15px var(--primary-glow);
+      transform: scale(1.01);
+    }
+
+    /* Cursor */
+    #cursor {
+      display: inline-block;
+      width: 10px;
+      height: 20px;
+      background: var(--primary-color);
+      margin-left: 3px;
+      animation: blink 1s steps(2, start) infinite;
+      vertical-align: bottom;
+      filter: drop-shadow(0 0 6px var(--primary-color));
+    }
+
+    /* Matrix rain canvas overlay */
+    #matrix-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanlines overlay */
+    #scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 255, 0, 0.05),
+        rgba(0, 255, 0, 0.05) 2px,
+        rgba(0, 255, 0, 0.1) 3px,
+        rgba(0, 255, 0, 0.05) 4px
+      );
+      animation: scanPulse 4s ease-in-out infinite;
+      mix-blend-mode: screen;
+      z-index: 1;
+    }
+
+    /* Progress bar container */
+    .progress-container {
+      width: 100%;
+      height: 20px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--primary-color);
+      margin: 10px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: var(--primary-color);
+      position: relative;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px var(--primary-color);
+    }
+
+    /* Progress bar text */
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--bg-color);
+      font-weight: bold;
+      mix-blend-mode: difference;
+    }
+
+    /* Digital pet container */
+    #pet-container {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 100px;
+      height: 100px;
+      z-index: 100;
+      cursor: pointer;
+      transition: all 0.5s ease;
+      filter: drop-shadow(0 0 10px var(--primary-glow));
+    }
+
+    /* Cybernetic Pet Styling */
+    #pet {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transition: all 0.5s ease;
+      transform-origin: center;
+    }
+
+    /* Pet Head */
+    .pet-head {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      top: 5px;
+      left: 15px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border: 2px solid var(--primary-color);
+      border-radius: 15px;
+      box-shadow: 0 0 10px var(--primary-glow);
+      overflow: hidden;
+    }
+
+    /* Pet Circuit Lines */
+    .pet-circuit {
+      position: absolute;
+      background-color: var(--primary-color);
+      opacity: 0.7;
+    }
+
+    .pet-circuit-1 {
+      width: 30px;
+      height: 2px;
+      top: 15px;
+      left: 5px;
+    }
+
+    .pet-circuit-2 {
+      width: 2px;
+      height: 20px;
+      top: 15px;
+      left: 35px;
+    }
+
+    .pet-circuit-3 {
+      width: 20px;
+      height: 2px;
+      top: 35px;
+      left: 35px;
+    }
+
+    .pet-circuit-4 {
+      width: 2px;
+      height: 15px;
+      top: 35px;
+      left: 55px;
+    }
+
+    /* Pet Eyes */
+    .pet-eye {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background-color: var(--primary-color);
+      border-radius: 3px;
+      top: 25px;
+      box-shadow: 0 0 8px var(--primary-color);
+      animation: eyeBlink 3s infinite;
+    }
+
+    .pet-eye.left {
+      left: 15px;
+    }
+
+    .pet-eye.right {
+      right: 15px;
+    }
+
+    /* Pet Mouth */
+    .pet-mouth {
+      position: absolute;
+      width: 30px;
+      height: 10px;
+      border-bottom: 3px solid var(--primary-color);
+      border-radius: 5px;
+      bottom: 15px;
+      left: 20px;
+      box-shadow: 0 0 8px var(--primary-color);
+      transition: all 0.3s ease;
+    }
+
+    /* Pet Antenna */
+    .pet-antenna {
+      position: absolute;
+      width: 2px;
+      height: 15px;
+      background-color: var(--primary-color);
+      top: -15px;
+      left: 35px;
+      box-shadow: 0 0 8px var(--primary-color);
+    }
+
+    .pet-antenna-tip {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      top: -18px;
+      left: 33px;
+      box-shadow: 0 0 8px var(--primary-color);
+      animation: pulse 2s infinite;
+    }
+
+    /* Pet Body */
+    .pet-body {
+      position: absolute;
+      width: 40px;
+      height: 20px;
+      bottom: 0;
+      left: 30px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border: 2px solid var(--primary-color);
+      border-radius: 5px;
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* Pet Legs */
+    .pet-leg {
+      position: absolute;
+      width: 3px;
+      height: 12px;
+      background-color: var(--primary-color);
+      bottom: -10px;
+      box-shadow: 0 0 8px var(--primary-color);
+    }
+
+    .pet-leg.left-front {
+      left: 33px;
+      animation: legMove 0.5s infinite alternate;
+    }
+
+    .pet-leg.right-front {
+      left: 43px;
+      animation: legMove 0.5s infinite alternate-reverse;
+    }
+
+    .pet-leg.left-back {
+      left: 53px;
+      animation: legMove 0.5s infinite alternate-reverse;
+    }
+
+    .pet-leg.right-back {
+      left: 63px;
+      animation: legMove 0.5s infinite alternate;
+    }
+
+    /* Pet Speech Bubble */
+    .pet-speech {
+      position: absolute;
+      min-width: 120px;
+      max-width: 200px;
+      padding: 10px;
+      background-color: var(--terminal-bg);
+      border: 1px solid var(--primary-color);
+      border-radius: 10px;
+      color: var(--primary-color);
+      font-family: var(--font-pixel);
+      font-size: 14px;
+      bottom: 110px;
+      right: 20px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px var(--primary-glow);
+      z-index: 101;
+      pointer-events: none;
+    }
+
+    .pet-speech:after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      right: 30px;
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: var(--primary-color) transparent;
+    }
+
+    .pet-speech.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Pet Pixel Grid Overlay */
+    .pet-pixel-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(51, 255, 51, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(51, 255, 51, 0.1) 1px, transparent 1px);
+      background-size: 4px 4px;
+      pointer-events: none;
+    }
+
+    /* Pet interaction menu */
+    #pet-menu {
+      position: absolute;
+      bottom: 110px;
+      right: 40px;
+      background-color: var(--terminal-bg);
+      border: 1px solid var(--primary-color);
+      border-radius: 5px;
+      padding: 10px;
+      display: none;
+      box-shadow: 0 0 15px var(--primary-glow);
+      z-index: 101;
+    }
+
+    .pet-action {
+      color: var(--primary-color);
+      padding: 5px 10px;
+      margin: 5px 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 3px;
+      font-family: var(--font-pixel);
+    }
+
+    .pet-action:hover {
+      background-color: rgba(51, 255, 51, 0.2);
+      transform: translateX(5px);
+    }
+
+    /* Status bar */
+    #status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: var(--terminal-bg);
+      color: var(--primary-color);
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      border-top: 1px solid var(--primary-color);
+      display: flex;
+      justify-content: space-between;
+      z-index: 50;
+      box-sizing: border-box;
+    }
+
+    #status-indicator {
+      width: 10px;
+      height: 10px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 2s infinite;
+    }
+
+    /* Glitch overlay */
+    #glitch-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      mix-blend-mode: screen;
+      background: linear-gradient(
+        45deg,
+        rgba(51, 255, 51, 0.1),
+        transparent 70%
+      );
+    }
+
+    /* Animations */
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    @keyframes eyeBlink {
+      0%, 45%, 55%, 100% { opacity: 1; height: 15px; }
+      50% { opacity: 0.5; height: 2px; }
+    }
+
+    @keyframes scanPulse {
+      0%, 100% { opacity: 0.08; }
+      50% { opacity: 0.15; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.2);
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes legMove {
+      0% { transform: rotate(-15deg); }
+      100% { transform: rotate(15deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes glitchText {
+      0%, 100% { 
+        text-shadow:
+          0 0 5px var(--primary-color),
+          0 0 10px var(--primary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+      }
+      25% {
+        text-shadow:
+          -2px 0 5px var(--accent-color),
+          2px 2px 10px var(--secondary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+        transform: skew(0.5deg, 0.5deg);
+      }
+      26% {
+        text-shadow:
+          0 0 5px var(--primary-color),
+          0 0 10px var(--primary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+        transform: skew(0deg, 0deg);
+      }
+      50% {
+        text-shadow:
+          0 0 5px var(--primary-color),
+          0 0 10px var(--primary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+      }
+      75% {
+        text-shadow:
+          1px -1px 5px var(--accent-color),
+          -1px 1px 10px var(--secondary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+        transform: skew(-0.5deg, -0.5deg);
+      }
+      76% {
+        text-shadow:
+          0 0 5px var(--primary-color),
+          0 0 10px var(--primary-color),
+          0 0 20px var(--primary-color),
+          0 0 40px var(--primary-glow);
+        transform: skew(0deg, 0deg);
+      }
+    }
+
+    @keyframes glitch {
+      0%, 100% { opacity: 0; }
+      5%, 10% { opacity: 0.8; transform: translate(-5px, 0); }
+      15% { opacity: 0; }
+      20%, 25% { opacity: 0.6; transform: translate(5px, 0); }
+      30% { opacity: 0; }
+      45%, 50% { opacity: 0.4; transform: translate(0, -3px); }
+      55% { opacity: 0; }
+    }
+
+    /* Accessibility improvements */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    /* Media queries for responsiveness */
+    @media (max-width: 768px) {
+      #terminal-container {
+        padding: 1rem;
+        height: 100vh;
+        width: 100vw;
+        box-sizing: border-box;
+      }
+      
+      #header-block {
+        font-size: 0.7rem;
+        margin-bottom: 1rem;
+      }
+      
+      #terminal {
+        max-height: 70vh;
+      }
+      
+      #pet-container {
+        width: 80px;
+        height: 80px;
+        bottom: 60px;
+        right: 20px;
+      }
+      
+      .pet-speech {
+        max-width: 150px;
+        font-size: 12px;
+        bottom: 140px;
+        right: 10px;
+      }
+      
+      #status-bar {
+        padding: 3px 5px;
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #terminal-container {
+        padding: 0.5rem;
+      }
+      
+      #header-block {
+        font-size: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      #terminal {
+        padding: 0.5rem;
+        max-height: 75vh;
+      }
+      
+      #pet-container {
+        width: 60px;
+        height: 60px;
+        bottom: 50px;
+        right: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Screen reader announcement area -->
+  <div aria-live="polite" id="screen-reader-announcer" class="sr-only"></div>
+
+  <!-- Matrix background -->
+  <canvas id="matrix-canvas" aria-hidden="true"></canvas>
+  
+  <!-- Scanlines -->
+  <div id="scanlines" aria-hidden="true"></div>
+  
+  <!-- Glitch overlay -->
+  <div id="glitch-overlay" aria-hidden="true"></div>
+
+  <div id="terminal-container" role="main" aria-label="Gl1tch0v3rr1d3 Terminal">
+    <div id="header-block" aria-label="Gl1tch0v3rr1d3 Header" role="region" tabindex="0">
+      ██████╗ ██╗     ███████╗████████╗ ██████╗██╗  ██╗ ██████╗ ██╗   ██╗██████╗ ██████╗ ██████╗ ███████╗██████╗ ███████╗
+      ██╔════╝██║     ╚════██║╚══██╔══╝██╔════╝██║  ██║██╔═══██╗██║   ██║╚════██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔════╝
+      ██║  ███╗██║        ██╔╝   ██║   ██║     ███████║██║   ██║██║   ██║ █████╔╝██████╔╝██████╔╝█████╗  ██║  ██║█████╗  
+      ██║   ██║██║       ██╔╝    ██║   ██║     ██╔══██║██║   ██║╚██╗ ██╔╝██╔═══╝ ██╔═══╝ ██╔══██╗██╔══╝  ██║  ██║██╔══╝  
+      ╚██████╔╝███████╗  ██║     ██║   ╚██████╗██║  ██║╚██████╔╝ ╚████╔╝ ███████╗██║     ██║  ██║███████╗██████╔╝███████╗
+       ╚═════╝ ╚══════╝  ╚═╝     ╚═╝    ╚═════╝╚═╝  ╚═╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝     ╚═╝  ╚═╝╚══════╝╚═════╝ ╚══════╝
+    </div>
+
+    <div id="terminal" aria-live="polite" aria-label="Gl1tch0v3rr1d3 terminal output" tabindex="0">
+      <span id="cursor" aria-hidden="true"></span>
+    </div>
+
+    <div class="progress-container" aria-label="System loading progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar" id="main-progress">
+        <div class="progress-text">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Digital pet -->
+  <div id="pet-container" tabindex="0" aria-label="Digital pet assistant" role="button">
+    <div id="pet">
+      <div class="pet-head">
+        <div class="pet-circuit pet-circuit-1"></div>
+        <div class="pet-circuit pet-circuit-2"></div>
+        <div class="pet-circuit pet-circuit-3"></div>
+        <div class="pet-circuit pet-circuit-4"></div>
+        <div class="pet-eye left"></div>
+        <div class="pet-eye right"></div>
+        <div class="pet-mouth"></div>
+        <div class="pet-antenna"></div>
+        <div class="pet-antenna-tip"></div>
+      </div>
+      <div class="pet-body"></div>
+      <div class="pet-leg left-front"></div>
+      <div class="pet-leg right-front"></div>
+      <div class="pet-leg left-back"></div>
+      <div class="pet-leg right-back"></div>
+      <div class="pet-pixel-overlay"></div>
+    </div>
+  </div>
+
+  <!-- Pet speech bubble -->
+  <div class="pet-speech" id="pet-speech" aria-live="polite"></div>
+
+  <!-- Pet interaction menu -->
+  <div id="pet-menu" role="menu" aria-label="Pet interaction options">
+    <div class="pet-action" role="menuitem" tabindex="0" data-action="help">Ask for help</div>
+    <div class="pet-action" role="menuitem" tabindex="0" data-action="hack">Hack assistance</div>
+    <div class="pet-action" role="menuitem" tabindex="0" data-action="play">Play with pet</div>
+    <div class="pet-action" role="menuitem" tabindex="0" data-action="hide">Hide pet</div>
+  </div>
+
+  <!-- Status bar -->
+  <div id="status-bar" role="status" aria-live="polite">
+    <div>
+      <span id="status-indicator"></span>
+      <span id="status-text">System online</span>
+    </div>
+    <div id="time-display">00:00:00</div>
+  </div>
+
+  <script>
+    // Accessibility announcer function
+    function announce(message) {
+      const announcer = document.getElementById('screen-reader-announcer');
+      announcer.textContent = message;
+    }
+
+    // Matrix rain effect
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    const katakana = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const fontSize = 16;
+    let columns = Math.floor(width / fontSize);
+
+    const drops = new Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = '#33ff33';
+      ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = katakana.charAt(Math.floor(Math.random() * katakana.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      columns = Math.floor(width / fontSize);
+
+      // Reset drops array with proper length
+      drops.length = columns;
+      for (let i = 0; i < columns; i++) {
+        drops[i] = 1;
+      }
+    });
+
+    setInterval(drawMatrix, 50);
+
+    // Glitch effect function
+    function triggerGlitch() {
+      const glitchOverlay = document.getElementById('glitch-overlay');
+      glitchOverlay.style.opacity = '1';
+      
+      // Random glitch position
+      const xPos = Math.random() * 100;
+      const yPos = Math.random() * 100;
+      
+      glitchOverlay.style.background = `
+        linear-gradient(
+          ${Math.random() * 360}deg,
+          rgba(51, 255, 51, ${Math.random() * 0.3}),
+          transparent ${50 + Math.random() * 20}%
+        )
+      `;
+      
+      setTimeout(() => {
+        glitchOverlay.style.opacity = '0';
+      }, 150);
+    }
+
+    // Periodically trigger glitch effects
+    setInterval(triggerGlitch, 3000 + Math.random() * 5000);
+
+    // Terminal typing effect
+    const terminal = document.getElementById('terminal');
+    const cursor = document.getElementById('cursor');
+
+    const lines = [
+      'void@root ~',
+      '└─$ sudo kill -9 $(pgrep -u 🫵) --0xdeadbeef --overwrite --darknet-flush --final-breach',
+      '[🫵.nullified] // access revoked, shadows fragmented, no backups, no mercy',
+      '',
+      '--==[𝔾𝕝𝟙𝕥𝕔𝕙𝟘𝕧𝟛𝕣𝕣𝟙𝕕𝟛 v.0x𝟼𝟹𝟹 | σʜ∂ωʀᴏᴏᴛ17]==--',
+      '--==[payload: %bTn>7j@vP$e0>yF`f;!F$LS]#d;Oz1^Vkx*6/4r;#&<|U3A,,zVKUp9j+]<P',
+      '--==[checksum: MzY3ZTQ4ZjUyYTIxNjU4NjNkZjEzZjZmYzMyYmNmMzY= | eol]==--',
+      '',
+      'Initializing system...'
+    ];
+
+    let lineIndex = 0;
+    let charIndex = 0;
+
+    function typeLine() {
+      if (lineIndex >= lines.length) {
+        cursor.style.display = 'none';
+        startProgressBar();
+        return;
+      }
+
+      const line = lines[lineIndex];
+      if (charIndex < line.length) {
+        terminal.textContent += line.charAt(charIndex);
+        charIndex++;
+        terminal.scrollTop = terminal.scrollHeight; // keep scroll down
+        setTimeout(typeLine, 40);
+      } else {
+        terminal.textContent += '\n';
+        terminal.scrollTop = terminal.scrollHeight; // keep scroll down
+        lineIndex++;
+        charIndex = 0;
+        setTimeout(typeLine, 600);
+      }
+    }
+
+    // Progress bar animation
+    function startProgressBar() {
+      const progressBar = document.getElementById('main-progress');
+      const progressText = progressBar.querySelector('.progress-text');
+      let progress = 0;
+      
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${Math.floor(progress)}%`;
+        
+        // Update ARIA attributes for accessibility
+        progressBar.parentElement.setAttribute('aria-valuenow', Math.floor(progress));
+        
+        if (progress === 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            addTerminalLine('System initialized successfully.');
+            addTerminalLine('Gl1tch0v3rr1d3 terminal ready.');
+            announce('System initialized. Gl1tch0v3rr1d3 terminal ready.');
+            activatePet();
+          }, 500);
+        }
+      }, 200);
+    }
+
+    // Add a line to the terminal
+    function addTerminalLine(text) {
+      const terminalContent = terminal.textContent;
+      terminal.textContent = terminalContent + '\n' + text;
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // Run a progress operation with callback
+    function runProgressOperation(operationText, callback) {
+      // Create a progress bar
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'progress-container';
+      progressContainer.setAttribute('role', 'progressbar');
+      progressContainer.setAttribute('aria-valuemin', '0');
+      progressContainer.setAttribute('aria-valuemax', '100');
+      progressContainer.setAttribute('aria-valuenow', '0');
+      
+      const progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      
+      const progressText = document.createElement('div');
+      progressText.className = 'progress-text';
+      progressText.textContent = '0%';
+      
+      progressBar.appendChild(progressText);
+      progressContainer.appendChild(progressBar);
+      terminal.appendChild(progressContainer);
+      terminal.scrollTop = terminal.scrollHeight;
+      
+      // Announce operation start
+      announce(`${operationText} started`);
+      
+      // Animate progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 5;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${Math.floor(progress)}%`;
+        progressContainer.setAttribute('aria-valuenow', Math.floor(progress));
+        
+        if (progress === 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => {
+            // Remove progress bar
+            terminal.removeChild(progressContainer);
+            
+            // Execute callback
+            if (callback) callback();
+            
+            // Announce operation completion
+            announce(`${operationText} completed`);
+          }, 500);
+        }
+      }, 200);
+    }
+
+    // Digital pet functionality
+    const petContainer = document.getElementById('pet-container');
+    const pet = document.getElementById('pet');
+    const petMenu = document.getElementById('pet-menu');
+    const petSpeech = document.getElementById('pet-speech');
+    
+    // Pet random phrases
+    const petPhrases = [
+      "I detect unauthorized access attempts...",
+      "System vulnerability detected in sector 7G",
+      "Your firewall needs updating, human",
+      "Scanning network for intrusions...",
+      "Would you like me to encrypt that?",
+      "01001000 01101001 00100001",
+      "This connection is not secure",
+      "Quantum encryption enabled",
+      "Monitoring all frequencies",
+      "Shall we play a game?",
+      "I've seen things you wouldn't believe...",
+      "All your base are belong to us",
+      "The cake is a lie",
+      "Have you tried turning it off and on again?",
+      "Hack the planet!",
+      "I know kung fu",
+      "There is no spoon",
+      "Follow the white rabbit",
+      "Wake up, Neo...",
+      "Reality is just electric signals interpreted by your brain"
+    ];
+    
+    // Pet movement
+    let petX = 20;
+    let petY = window.innerHeight - 150;
+    let targetX = petX;
+    let targetY = petY;
+    let petVisible = true;
+    
+    function activatePet() {
+      // Start pet movement
+      movePet();
+      
+      // Start random speech
+      startRandomSpeech();
+      
+      // Announce pet activation for screen readers
+      announce("Digital pet activated. It will move around the screen and occasionally speak.");
+    }
+    
+    function movePet() {
+      if (!petVisible) {
+        requestAnimationFrame(movePet);
+        return;
+      }
+      
+      // Random movement
+      if (Math.random() < 0.01 && !petMenu.style.display === 'block') {
+        // Set a new target position within screen bounds
+        const maxX = window.innerWidth - 120;
+        const minY = 100;
+        const maxY = window.innerHeight - 150;
+        
+        targetX = Math.max(20, Math.min(maxX, Math.random() * maxX));
+        targetY = Math.max(minY, Math.min(maxY, Math.random() * maxY));
+        
+        // Change pet appearance based on movement
+        if (targetX > petX) {
+          // Moving right
+          pet.style.transform = 'scaleX(1)';
+        } else {
+          // Moving left
+          pet.style.transform = 'scaleX(-1)';
+        }
+      }
+      
+      // Smooth movement towards target
+      petX += (targetX - petX) * 0.05;
+      petY += (targetY - petY) * 0.05;
+      
+      petContainer.style.transform = `translate(${petX - 20}px, ${petY - 20}px)`;
+      
+      requestAnimationFrame(movePet);
+    }
+    
+    // Pet random speech
+    function startRandomSpeech() {
+      if (!petVisible) return;
+      
+      // Random interval between 5-20 seconds
+      const interval = 5000 + Math.random() * 15000;
+      
+      setTimeout(() => {
+        if (petVisible && !petMenu.style.display === 'block') {
+          // Show a random phrase
+          showPetSpeech(petPhrases[Math.floor(Math.random() * petPhrases.length)]);
+          
+          // Hide speech after 3-5 seconds
+          setTimeout(() => {
+            hidePetSpeech();
+          }, 3000 + Math.random() * 2000);
+        }
+        
+        // Schedule next speech
+        startRandomSpeech();
+      }, interval);
+    }
+    
+    // Show pet speech
+    function showPetSpeech(text) {
+      petSpeech.textContent = text;
+      petSpeech.classList.add('show');
+      
+      // Position speech bubble relative to pet
+      const petRect = petContainer.getBoundingClientRect();
+      petSpeech.style.bottom = `${window.innerHeight - petRect.top + 10}px`;
+      petSpeech.style.right = `${window.innerWidth - petRect.right + 20}px`;
+      
+      // Announce for screen readers
+      announce(`Pet says: ${text}`);
+    }
+    
+    // Hide pet speech
+    function hidePetSpeech() {
+      petSpeech.classList.remove('show');
+    }
+    
+    // Pet interaction
+    petContainer.addEventListener('click', () => {
+      if (petMenu.style.display === 'block') {
+        petMenu.style.display = 'none';
+      } else {
+        petMenu.style.display = 'block';
+        // Position menu relative to pet
+        const petRect = petContainer.getBoundingClientRect();
+        petMenu.style.bottom = `${window.innerHeight - petRect.top + 10}px`;
+        petMenu.style.right = `${window.innerWidth - petRect.right + 20}px`;
+      }
+    });
+    
+    // Pet menu actions
+    document.querySelectorAll('.pet-action').forEach(action => {
+      action.addEventListener('click', (e) => {
+        const actionType = e.target.dataset.action;
+        
+        switch(actionType) {
+          case 'help':
+            showPetSpeech("I can assist with system monitoring and security. Try clicking on the terminal for more information.");
+            addTerminalLine('[PET] I can assist with system monitoring and security.');
+            break;
+          case 'hack':
+            showPetSpeech("Initiating system scan... Vulnerabilities detected in sector 7G.");
+            addTerminalLine('[PET] Initiating system scan...');
+            runProgressOperation('Analyzing system', () => {
+              addTerminalLine('[PET] Scan complete. Vulnerabilities detected in sector 7G.');
+            });
+            break;
+          case 'play':
+            // Pet animation
+            pet.style.animation = 'float 1s ease-in-out';
+            setTimeout(() => {
+              pet.style.animation = '';
+            }, 1000);
+            showPetSpeech("01001000 01100001 01110000 01110000 01111001 00100001");
+            addTerminalLine('[PET] *happy digital noises*');
+            break;
+          case 'hide':
+            petVisible = false;
+            petContainer.style.display = 'none';
+            addTerminalLine('[PET] Going to sleep mode. Type "pet" to wake me up.');
+            break;
+        }
+        
+        petMenu.style.display = 'none';
+      });
+    });
+    
+    // Keyboard accessibility for pet menu
+    document.querySelectorAll('.pet-action').forEach(action => {
+      action.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.target.click();
+        }
+      });
+    });
+    
+    // Status bar time update
+    function updateTime() {
+      const timeDisplay = document.getElementById('time-display');
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      
+      timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+    
+    // Initialize everything
+    window.addEventListener('DOMContentLoaded', () => {
+      // Start typing animation
+      typeLine();
+      
+      // Update time
+      setInterval(updateTime, 1000);
+      updateTime();
+      
+      // Announce page load for screen readers
+      announce('Gl1tch0v3rr1d3 Terminal loaded. Initializing system.');
+    });
+
+    // Keyboard navigation improvements
+    document.addEventListener('keydown', (e) => {
+      // ESC key closes pet menu
+      if (e.key === 'Escape' && petMenu.style.display === 'block') {
+        petMenu.style.display = 'none';
+      }
+      
+      // P key toggles pet visibility
+      if (e.key === 'p') {
+        if (petVisible) {
+          petVisible = false;
+          petContainer.style.display = 'none';
+        } else {
+          petVisible = true;
+          petContainer.style.display = 'block';
+        }
+      }
+    });
+
+    // Terminal click handler
+    terminal.addEventListener('click', () => {
+      addTerminalLine('Terminal access granted.');
+      triggerGlitch();
+    });
+  </script>
+</body>
+</html>
